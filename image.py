@@ -130,18 +130,19 @@ class Image:
                     depth_image, bg_removed = image.get_Images(align, clipping_distance)
 
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-                images = np.hstack((bg_removed, depth_colormap)) #color map and depth maps
-                images = cv2.blur(images,(5,5))
 
-                images, mask = self.find_Pen(images) #only show purple images (mask)
+                color_blurred = cv2.blur(bg_removed, (5,5))
+                found, mask = self.find_Pen(color_blurred) #only show purple images (mask)
                 contours, approx, centre = self.contour(mask)
 
                 if(centre):
-                    cv2.circle(images, centre, 40, (255,0,0), 40)
+                    cv2.circle(found, centre, 40, (255,0,0), 40)
                     print(centre)
 
-                cv2.drawContours(images, contours, -1, (0,255,0), 3)
-                cv2.drawContours(images, approx, -1, (0,255,0), 3)
+                cv2.drawContours(found, contours, -1, (0,255,0), 3)
+                cv2.drawContours(found, approx, -1, (0,255,0), 3)
+
+                images = np.hstack((found, depth_colormap)) #color map and depth maps
 
                 cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
                 cv2.imshow('Align Example', images)
