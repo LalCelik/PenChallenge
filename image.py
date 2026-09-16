@@ -4,6 +4,7 @@ import pyrealsense2 as rs
 import numpy as np
 # Import OpenCV for easy image rendering
 import cv2
+from matplotlib import pyplot as plt
 
 class Image:
     def __init__(self, pipeline, config):
@@ -97,10 +98,24 @@ class Image:
 
     #join the points that have the same color or intensity
     def contour(self, mask):
-        # gray = cv2.cvtColor(images, cv2.COLOR_BGR2GRAY)
-        # ret, thresh = cv2.threshold(gray,127,255,0)
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
-        return contours, hierarchy
+        approx = None
+        center = None
+
+        # print(contours)
+        if(contours):
+            cnt = contours[0]
+            epsilon = 0.1*cv2.arcLength(cnt,True)
+            approx = cv2.approxPolyDP(cnt,epsilon,True)
+
+            M = cv2.moments(cnt)
+            if(M['m00']):
+                cx = int(M['m10']/M['m00'])
+                cy = int(M['m01']/M['m00'])
+                if(cx and cy):
+                    center = (cx,cy)
+
+        return contours, approx, center
 
 
     def take_image():
@@ -114,20 +129,24 @@ class Image:
                 else:
                     depth_image, bg_removed = image.get_Images(align, clipping_distance)
 
-                # Render images:
-                #   depth align to color on left
-                #   depth on right
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                 images = np.hstack((bg_removed, depth_colormap)) #color map and depth maps
+                images = cv2.blur(images,(5,5))
 
                 images, mask = self.find_Pen(images) #only show purple images (mask)
-                contours, hierarchy = self.contour(mask)
+                contours, approx, centre = self.contour(mask)
+
+                if(centre):
+                    cv2.circle(images, centre, 40, (255,0,0), 40)
+                    print(centre)
 
                 cv2.drawContours(images, contours, -1, (0,255,0), 3)
+                cv2.drawContours(images, approx, -1, (0,255,0), 3)
 
-                #showing the pop up window
                 cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
                 cv2.imshow('Align Example', images)
+                # cv2.imshow('Mask Example', mask)
+
 
                 # cv2.imshow('Align Example', images)
                 key = cv2.waitKey(1)
