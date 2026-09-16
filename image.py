@@ -104,7 +104,20 @@ class Image:
 
         # print(contours)
         if(contours):
+            #merge contour points
+            #so that parts of the pen aren't separated
+            all_points = np.concatenate(contours, axis=0)
+            contour = cv2.convexHull(all_points)
+            ellipse_contour = None
+        
             cnt = contours[0]
+
+            if(len(cnt) >= 5):
+                ellipse = cv2.fitEllipse(cnt)
+                ellipse_contour = cv2.ellipse(mask,ellipse,(0,255,0),2)
+                cv2.imshow("Ellipse", ellipse_contour)
+
+
             epsilon = 0.1*cv2.arcLength(cnt,True)
             approx = cv2.approxPolyDP(cnt,epsilon,True)
 
@@ -115,7 +128,7 @@ class Image:
                 if(cx and cy):
                     center = (cx,cy)
 
-        return contours, approx, center
+        return contours, ellipse_contour, approx, center
 
 
     def take_image():
@@ -130,14 +143,21 @@ class Image:
                     depth_image, bg_removed = image.get_Images(align, clipping_distance)
 
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-
+    
                 color_blurred = cv2.blur(bg_removed, (5,5))
                 found, mask = self.find_Pen(color_blurred) #only show purple images (mask)
-                contours, approx, centre = self.contour(mask)
+                contours, ellipse_contour, approx, centre = self.contour(mask)
 
                 if(centre):
                     cv2.circle(found, centre, 40, (255,0,0), 40)
                     print(centre)
+
+
+                #delte 
+                contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+                approx = None
+                center = None
+
 
                 cv2.drawContours(found, contours, -1, (0,255,0), 3)
                 cv2.drawContours(found, approx, -1, (0,255,0), 3)
