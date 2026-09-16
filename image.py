@@ -114,18 +114,20 @@ class Image:
                 ellipse = cv2.fitEllipse(contour)
                 mask_bgr = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
                 ellipse_contour = cv2.ellipse(mask_bgr,ellipse,(0,255,0),2)
-                cv2.imshow("Ellipse", ellipse_contour)
+                (xc, yc), (axes_width, axes_height), angle = ellipse
+                center_x = int(xc)
+                center_y = int(yc)
+                center = (center_x, center_y)
 
+            # epsilon = 0.1*cv2.arcLength(contour,True)
+            # approx = cv2.approxPolyDP(contour,epsilon,True)
 
-            epsilon = 0.1*cv2.arcLength(contour,True)
-            approx = cv2.approxPolyDP(contour,epsilon,True)
-
-            M = cv2.moments(contour)
-            if(M['m00']):
-                cx = int(M['m10']/M['m00'])
-                cy = int(M['m01']/M['m00'])
-                if(cx and cy):
-                    center = (cx,cy)
+            # M = cv2.moments(ellipse_contour)
+            # if(M['m00']):
+            #     cx = int(M['m10']/M['m00'])
+            #     cy = int(M['m01']/M['m00'])
+            #     if(cx and cy):
+            #         center = (cx,cy)
 
         return contours, ellipse_contour, approx, center
 
@@ -147,9 +149,10 @@ class Image:
                 found, mask = self.find_Pen(color_blurred) #only show purple images (mask)
                 contours, ellipse_contour, approx, centre = self.contour(mask)
 
-                if(centre):
-                    cv2.circle(found, centre, 40, (255,0,0), 40)
-                    print(centre)
+                if(len(contours) >= 5):
+                    cv2.imshow("Ellipse", ellipse_contour)
+                    cv2.circle(ellipse_contour, center, 30, (250,0,0), 20)
+                    cv2.imshow("circle")
 
 
                 #delte 
