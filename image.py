@@ -93,6 +93,7 @@ class Image:
 
         #bitwise mask and orig image
         res = cv2.bitwise_and(frame,frame, mask = mask)
+        # res = cv2.cvtColor(res, cv2.COLOR_BGR2HSV) to black and white
 
         return res, mask
 
@@ -125,14 +126,12 @@ class Image:
                 images = np.hstack((bg_removed, depth_colormap)) #color map and depth map
 
                 res, mask = self.find_Pen(images) #only show purple images (mask)
-                images = cv2.bitwise_and(images, res, mask=mask)
-
-                # images = self.only_Pen(images, purple_image, mask)
-                # images = cv2.cvtColor(images, cv2.COLOR_BGR2GRAY)
 
                 #showing the pop up window
                 cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
-                cv2.imshow('Align Example', images)
+                cv2.imshow('Align Example', res)
+
+                # cv2.imshow('Align Example', images)
                 key = cv2.waitKey(1)
                 # Press esc or 'q' to close the image window
                 if key & 0xFF == ord('q') or key == 27:
