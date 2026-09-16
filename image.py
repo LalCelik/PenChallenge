@@ -93,19 +93,14 @@ class Image:
 
         #bitwise mask and orig image
         res = cv2.bitwise_and(frame,frame, mask = mask)
-        # res = cv2.cvtColor(res, cv2.COLOR_BGR2HSV) to black and white
-
         return res, mask
 
-    def only_Pen(self, images, purple_images, mask):
-
-        mask_inv = cv2.bitwise_not(mask)
-        # res = cv2.bitwise_and(images,images, mask = mask_inv)
-        # images = cv2.bitwise_and(pen_bitwise,pen_bitwise,mask = mask_inv)
-
-        pen_image = cv2.bitwise_and(purple_images,purple_images,mask = mask_inv)
-
-        return pen_image
+    #join the points that have the same color or intensity
+    def contour(self, images):
+        gray = cv2.cvtColor(images, cv2.COLOR_BGR2GRAY)
+        ret, thresh = cv2.threshold(gray,127,255,0)
+        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        return contours, hierarchy
 
 
     def take_image():
@@ -125,11 +120,14 @@ class Image:
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
                 images = np.hstack((bg_removed, depth_colormap)) #color map and depth map
 
-                res, mask = self.find_Pen(images) #only show purple images (mask)
+                images, mask = self.find_Pen(images) #only show purple images (mask)
+                contours, hierarchy = self.contour(images)
+
+                cv2.drawContours(images, contours, -1, (0,255,0), 3)
 
                 #showing the pop up window
                 cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
-                cv2.imshow('Align Example', res)
+                cv2.imshow('Align Example', images)
 
                 # cv2.imshow('Align Example', images)
                 key = cv2.waitKey(1)
