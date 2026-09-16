@@ -96,10 +96,10 @@ class Image:
         return res, mask
 
     #join the points that have the same color or intensity
-    def contour(self, images):
-        gray = cv2.cvtColor(images, cv2.COLOR_BGR2GRAY)
-        ret, thresh = cv2.threshold(gray,127,255,0)
-        contours, hierarchy = cv2.findContours(thresh, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+    def contour(self, mask):
+        # gray = cv2.cvtColor(images, cv2.COLOR_BGR2GRAY)
+        # ret, thresh = cv2.threshold(gray,127,255,0)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         return contours, hierarchy
 
 
@@ -118,10 +118,10 @@ class Image:
                 #   depth align to color on left
                 #   depth on right
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-                images = np.hstack((bg_removed, depth_colormap)) #color map and depth map
+                images = np.hstack((bg_removed, depth_colormap)) #color map and depth maps
 
                 images, mask = self.find_Pen(images) #only show purple images (mask)
-                contours, hierarchy = self.contour(images)
+                contours, hierarchy = self.contour(mask)
 
                 cv2.drawContours(images, contours, -1, (0,255,0), 3)
 
