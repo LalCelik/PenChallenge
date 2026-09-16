@@ -107,8 +107,8 @@ class Image:
         if(contours):
             #merge contour points
             #so that parts of the pen aren't separated
-            all_points = np.concatenate(contours, axis=0)
-            contour = cv2.convexHull(all_points)
+            all_points = np.concatenate(contours, axis=0) #put all the points in one list
+            contour = cv2.convexHull(all_points) #use convex hull to get the contour of the outer sides
 
             if(len(contour) >= 5):
                 ellipse = cv2.fitEllipse(contour)
