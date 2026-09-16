@@ -101,6 +101,7 @@ class Image:
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
         approx = None
         center = None
+        ellipse_contour = None
 
         # print(contours)
         if(contours):
@@ -108,20 +109,18 @@ class Image:
             #so that parts of the pen aren't separated
             all_points = np.concatenate(contours, axis=0)
             contour = cv2.convexHull(all_points)
-            ellipse_contour = None
-        
-            cnt = contours[0]
 
-            if(len(cnt) >= 5):
-                ellipse = cv2.fitEllipse(cnt)
-                ellipse_contour = cv2.ellipse(mask,ellipse,(0,255,0),2)
+            if(len(contour) >= 5):
+                ellipse = cv2.fitEllipse(contour)
+                mask_bgr = cv2.cvtColor(mask, cv2.COLOR_GRAY2BGR)
+                ellipse_contour = cv2.ellipse(mask_bgr,ellipse,(0,255,0),2)
                 cv2.imshow("Ellipse", ellipse_contour)
 
 
-            epsilon = 0.1*cv2.arcLength(cnt,True)
-            approx = cv2.approxPolyDP(cnt,epsilon,True)
+            epsilon = 0.1*cv2.arcLength(contour,True)
+            approx = cv2.approxPolyDP(contour,epsilon,True)
 
-            M = cv2.moments(cnt)
+            M = cv2.moments(contour)
             if(M['m00']):
                 cx = int(M['m10']/M['m00'])
                 cy = int(M['m01']/M['m00'])
