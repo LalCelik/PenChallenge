@@ -77,6 +77,38 @@ class Image:
         bg_removed = np.where((depth_image_3d > clipping_distance) | (depth_image_3d <= 0), grey_color, color_image)
         return depth_image, bg_removed
 
+    def find_Pen(self, images):
+        #take the image frames
+        frame = images #check this
+
+        #BGR to HSV
+        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+
+        #define the purple color range in HSV
+        lower_purp = np.array([110,50,50])
+        upper_purp = np.array([130,255,255])
+
+        #mask to only get purple colors
+        mask = cv2.inRange(hsv, lower_purp, upper_purp)
+
+        #bitwise mask and orig image
+        res = cv2.bitwise_and(frame,frame, mask = mask)
+
+        return res, mask
+
+    def only_Pen(self, images, purple_images, mask):
+
+        mask_inv = cv2.bitwise_not(mask)
+        # res = cv2.bitwise_and(images,images, mask = mask_inv)
+        # images = cv2.bitwise_and(pen_bitwise,pen_bitwise,mask = mask_inv)
+
+        pen_image = cv2.bitwise_and(purple_images,purple_images,mask = mask_inv)
+
+        return pen_image
+
+
+    def take_image():
+        return None #maybe use the key press to take images? and read them from a file?
 
     def render(self):
         try:
@@ -85,12 +117,20 @@ class Image:
                     continue
                 else:
                     depth_image, bg_removed = image.get_Images(align, clipping_distance)
+
                 # Render images:
                 #   depth align to color on left
                 #   depth on right
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
-                images = np.hstack((bg_removed, depth_colormap))
+                images = np.hstack((bg_removed, depth_colormap)) #color map and depth map
 
+                res, mask = self.find_Pen(images) #only show purple images (mask)
+                images = cv2.bitwise_and(images, res, mask=mask)
+
+                # images = self.only_Pen(images, purple_image, mask)
+                # images = cv2.cvtColor(images, cv2.COLOR_BGR2GRAY)
+
+                #showing the pop up window
                 cv2.namedWindow('Align Example', cv2.WINDOW_NORMAL)
                 cv2.imshow('Align Example', images)
                 key = cv2.waitKey(1)
