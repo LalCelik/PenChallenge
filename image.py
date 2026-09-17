@@ -149,10 +149,12 @@ class Image:
                 found, mask = self.find_Pen(color_blurred) #only show purple images (mask)
                 contours, ellipse_contour, approx, centre = self.contour(mask)
 
-                if(len(contours) >= 5):
+                if(centre is not None):
                     cv2.imshow("Ellipse", ellipse_contour)
-                    cv2.circle(ellipse_contour, center, 30, (250,0,0), 20)
-                    cv2.imshow("circle")
+
+                if(centre):
+                    cv2.circle(found, centre, 40, (255,0,0), 40)
+                    print(centre)
 
 
                 #delte 
