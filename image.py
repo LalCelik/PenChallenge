@@ -79,11 +79,8 @@ class Image:
         return depth_image, bg_removed
 
     def find_Pen(self, images):
-        #take the image frames
-        frame = images #check this
-
         #BGR to HSV
-        hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+        hsv = cv2.cvtColor(images, cv2.COLOR_BGR2HSV)
 
         #define the purple color range in HSV
         lower_purp = np.array([110,50,50])
@@ -93,7 +90,7 @@ class Image:
         mask = cv2.inRange(hsv, lower_purp, upper_purp)
 
         #bitwise mask and orig image
-        res = cv2.bitwise_and(frame,frame, mask = mask)
+        res = cv2.bitwise_and(images,images, mask = mask)
         return res, mask
 
     #join the points that have the same color or intensity
@@ -147,14 +144,15 @@ class Image:
     
                 color_blurred = cv2.blur(bg_removed, (5,5))
                 found, mask = self.find_Pen(color_blurred) #only show purple images (mask)
-                contours, ellipse_contour, approx, centre = self.contour(mask)
+                contours, ellipse_contour, approx, center = self.contour(mask)
 
-                if(centre is not None):
+                if(center is not None):
+                    print(center)
+                    cv2.circle(found, center, 40, (0,255,0), 40)
                     cv2.imshow("Ellipse", ellipse_contour)
 
-                if(centre):
-                    cv2.circle(found, centre, 40, (255,0,0), 40)
-                    print(centre)
+                # if(centre):
+                #     cv2.circle(found, centre, 40, (0,255,0), 40)
 
 
                 #delte 
