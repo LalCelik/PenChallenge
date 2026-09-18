@@ -127,12 +127,19 @@ class Image:
         profile = self.config.get_stream(rs.stream.color)
 
         if(profile is not None and center is not None):
-            intr = profile.as_video_stream_profile().get_intrinsics()
             px, py = center
-            depth_in_meters = depth_image.get_distance(px,py) #get back to this erroring when off screen
-            x,y,z = rs.rs2_deproject_pixel_to_point(intr, [px, py], depth_in_meters)
 
-        return x,y,z
+            #discard ellipse centers that fall outside the actual frame
+            #instead of feeding an invalid pixel to get_distance
+            if px < 0 or px >= depth_image.get_width() or py < 0 or py >= depth_image.get_height():
+                return None
+
+            intr = profile.as_video_stream_profile().get_intrinsics()
+            depth_in_meters = depth_image.get_distance(px,py)
+            x,y,z = rs.rs2_deproject_pixel_to_point(intr, [px, py], depth_in_meters)
+            return x,y,z
+
+        return None
 
 
     def take_image():
@@ -155,8 +162,10 @@ class Image:
                 if(center is not None):
                     cv2.circle(found, center, 40, (0,255,0), 40)
                     cv2.imshow("Ellipse", ellipse_contour)
-                    x,y,z = self.find_coords(center, aligned_depth_frame)
-                    print(x)
+                    coords = self.find_coords(center, aligned_depth_frame)
+                    if coords is not None:
+                        x, y, z = coords
+                        print(x)
 
                 contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
