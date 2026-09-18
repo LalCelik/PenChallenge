@@ -25,6 +25,16 @@ def test_calibration():
     #get location
     robot.arm.set_single_joint_position("waist", 0.5, 1.0)
 
+    positions = [(0,0)]
+    for (px_, py_, pz_) in positions:
+        # move robot to that position 
+        # robot.arm.set_ee_pose_components(x=px_, y=py_, z=pz_, moving_time=2.0, blocking=True)
+        # time.sleep(settle_time)
+
+        #robots current position
+        # T = robot.arm.get_ee_pose()
+        # Q = tuple(T[:3, 3])
+
 
     #move robot to very right
     #get location
