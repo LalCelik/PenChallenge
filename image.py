@@ -118,7 +118,6 @@ class Image:
                 center_x = int(xc) 
                 center_y = int(yc)
                 center = (center_x, center_y)
-
         return contours, ellipse_contour, approx, center
 
 #pixel to coords in meters
@@ -155,8 +154,9 @@ class Image:
                 if(center is not None):
                     cv2.circle(found, center, 40, (0,255,0), 40)
                     cv2.imshow("Ellipse", ellipse_contour)
+                    
                     x,y,z = self.find_coords(center, aligned_depth_frame)
-                    print(x)
+                    print((x,y,z))
 
                 contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
