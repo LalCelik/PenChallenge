@@ -1,3 +1,7 @@
+from rclpy.impl.rcutils_logger import RcutilsLogger
+if not hasattr(RcutilsLogger, "warn"):
+    RcutilsLogger.warn = RcutilsLogger.warning
+
 from interbotix_xs_modules.xs_robot.arm import InterbotixManipulatorXS
 from interbotix_common_modules.common_robot.robot import robot_shutdown, robot_startup
 # The robot object is what you use to control the robot
@@ -23,13 +27,11 @@ class Robot:
         pass
 
     def move_robot(self):
-        #release the gripper
-        robot.gripper.grasp(0.01)
+        # robot.arm.set_ee_pose_components(0.2, 0.1, 0.2)
+        # robot.arm.set_ee_pose_components(0.2, -0.1, 0.2)
+        # robot.arm.set_ee_pose_components(0.2, 0.1, 0.1)
+        robot.arm.set_ee_pose_components(0.2, -0.1, 0.1)
 
-        # x,y,z = center
-        #turn at waist to align with pen
-        # robot.arm.set_single_joint_position("waist", 0.5, 1.0)
-        robot.arm.set_single_joint_position("waist", 0.5, 1.0)
 
     def test_calibration(self):
         pipeline = rs.pipeline()
@@ -49,45 +51,80 @@ class Robot:
             for coord in coords:
                 #move robot to very left
                 x,y,z = coord
-                robot.arm.set_ee_pose_components(x=x, y=y, z=z)
+                i, success = robot.arm.set_ee_pose_components(x=x, y=y, z=z)
+                if not success:
+                    print("Pen is in invalid position")
+                    continue
                 blocking = True #wait until its done
                 q = robot.arm.get_ee_pose() #get the robot position this is Qi position 3x3 matrix
-                # print(q)
+                print("Robot Position:", q)
                 q = tuple(q[:3,3]) #take x,y,z
-                # print(q)
+                print("Robot Position:", q)
+                if(q is None):
+                    continue
+
+
                 q_array.append(q)
                 pen_coord = camera.get_coords_once(align,clipping_distance) #Pi
-                # print("Coordinates:", pen_coord)
-                coord_array.append(pen_coord) 
+                if pen_coord is None:
+                    print("Pen not detected, skipping this sample")
+                    continue 
+                coord_array.append(pen_coord)
 
-            print(len(q_array))
-            print(len(coord_array))
             print(coord_array)
 
-            rotation, rmsd = Rotation.align_vectors(q_array, coord_array)
-            r = rotation.as_matrix()
+            r = self.find_r(coord_array, q_array)
             print("Rotation Matrix:", r)
             t = self.find_t(coord_array, q_array, r)
 
-
             robot.arm.go_to_sleep_pose()
-            time.sleep(4)
-
-
+            robot.gripper.release()
+            time.sleep(5)
 
             #going to the pen
-            new_pen = camera.get_coords_once(align,clipping_distance)
-            q_new = r @ new_pen + t
-            x_n, y_n, z_n = q_new
-            robot.arm.set_ee_pose_components(x_n, y_n, z_n)
+            while True:
+                time.sleep(4)
+                new_pen = camera.get_coords_once(align,clipping_distance)
+                print(new_pen)
+                if(new_pen is None):
+                    print("No pen detected")
+                    continue
+                q_new = r @ new_pen + t
+
+                x_n, y_n, z_n = q_new
+                y_n = y_n
+
+                robot.arm.set_ee_pose_components(x_n, y_n, z_n)
+                robot.gripper.grasp()
+                break
+
+                pipeline.stop()
 
 
         finally:
-            pipeline.stop
+            pipeline.stop()
+
+
+    def find_r(self, p_list, q_list):
+        p_avg = np.mean(np.array(p_list), axis=0)
+        q_avg = np.mean(np.array(q_list), axis=0)
+        p_cen = []
+        q_cen = []
+
+        for i in range(len(p_list)):
+            p_c = np.array(p_list[i]) - p_avg
+            q_c = np.array(q_list[i]) - q_avg
+            p_cen.append(p_c)
+            q_cen.append(q_c)
+        
+        rotation, rmsd = Rotation.align_vectors(p_cen, q_cen)
+        r = rotation.as_matrix()
+        return r
+
 
     def find_t(self, p_list, q_list, r):
-        p_avg = np.mean(np.array(p_list), axis=0) / len(p_list)
-        q_avg = np.mean(np.array(q_list), axis=0) / len(q_list)
+        p_avg = np.mean(np.array(p_list), axis=0)
+        q_avg = np.mean(np.array(q_list), axis=0)
         t = q_avg - r @ p_avg
         return t
 
@@ -109,22 +146,14 @@ if  __name__ == "__main__":
     robot_startup()
     robot.arm.go_to_sleep_pose()
 
-    # robot.gripper.release()
-    # robot.gripper.grasp(0.2)
-    # test_arm()
-
-    # pipeline = rs.pipeline()
-    # config = rs.config()
-
-    # camera = Image(pipeline, config)
-    # align, clipping_distance = camera.align_cams()
-
-    # camera.render(align,clipping_distance)  # press q or Esc to leave the camera loop
-
+    robot.gripper.release()
+    robot.gripper.grasp(0.01)
+    time.sleep(2)
 
     robot_class = Robot()
+    # robot_class.move_robot()
     robot_class.test_calibration()
 
     # robot.arm.go_to_sleep_pose()
 
-    # robot_shutdown()
+    robot_shutdown()

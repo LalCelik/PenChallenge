@@ -107,6 +107,7 @@ class Image:
         if(contours):
             #merge contour points
             #so that parts of the pen aren't separated
+
             all_points = np.concatenate(contours, axis=0) #put all the points in one list
             contour = cv2.convexHull(all_points) #use convex hull to get the contour of the outer sides
 
@@ -127,14 +128,31 @@ class Image:
 
         if(profile is not None and center is not None):
             px, py = center
+            width, height = depth_image.get_width(), depth_image.get_height()
 
             #discard ellipse centers that fall outside the actual frame
             #instead of feeding an invalid pixel to get_distance
-            if px < 0 or px >= depth_image.get_width() or py < 0 or py >= depth_image.get_height():
+            if px < 0 or px >= width or py < 0 or py >= height:
                 return None
 
+            #median of a small patch instead of one pixel, since depth
+            #sensor noise/holes on a single pixel can look like a valid reading
+            radius = 2
+            samples = []
+            for dx in range(-radius, radius + 1):
+                for dy in range(-radius, radius + 1):
+                    x_p, y_p = px + dx, py + dy
+                    if 0 <= x_p < width and 0 <= y_p < height:
+                        d = depth_image.get_distance(x_p, y_p)
+                        if d > 0:
+                            samples.append(d)
+
+            if not samples:
+                return None
+
+            depth_in_meters = float(np.median(samples))
+
             intr = profile.as_video_stream_profile().get_intrinsics()
-            depth_in_meters = depth_image.get_distance(px,py)
             x,y,z = rs.rs2_deproject_pixel_to_point(intr, [px, py], depth_in_meters)
             return x,y,z
 
