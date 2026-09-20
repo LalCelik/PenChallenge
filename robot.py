@@ -11,49 +11,57 @@ robot = InterbotixManipulatorXS("px100", "arm", "gripper")
 #adjust height so theyre at right level (later)
 #move forward until it grabs pen
 
-def move_robot():
-    #release the gripper
-    robot.gripper.grasp(0.01)
-
-    # x,y,z = center
-    #turn at waist to align with pen
-    # robot.arm.set_single_joint_position("waist", 0.5, 1.0)
-    robot.arm.set_single_joint_position("waist", 0.5, 1.0)
-
-def test_calibration():
-    #move robot to very left 
-    #get location
-    robot.arm.set_single_joint_position("waist", 0.5, 1.0)
+class Robot:
+    def __init__(self):
 
 
-    #move robot to very right
-    #get location
-    robot.arm.set_single_joint_position("waist", 0.5, 1.0)
+        def move_robot():
+            #release the gripper
+            robot.gripper.grasp(0.01)
 
+            # x,y,z = center
+            #turn at waist to align with pen
+            # robot.arm.set_single_joint_position("waist", 0.5, 1.0)
+            robot.arm.set_single_joint_position("waist", 0.5, 1.0)
 
+        def test_calibration():
+            q_array = []
+            coords = [(0.2, 0.1, 0.2), (0.2,-0.1,0.2), (0.2,0.1,0.1), (0.2,-0.1,0.1)] #[(x,y,z)]
 
+            for coord in coords:
+                #move robot to very left
+                x,y,z = coord
+                robot.arm.set_ee_pose_components(x=x, y=y, z=z)
+                blocking = True #wait until its done
+                q = robot.arm.get_ee_pose() #get the robot position this is Qi position 3x3 matrix
+                q_array.append(q)
 
-
+        def test_arm():
+            mode = 'h'
+            # Let the user select the position
+            while mode != 'q':
+                mode=input("[h]ome, [s]leep, [q]uit ")
+                if mode == "h":
+                    robot.arm.go_to_home_pose()
+                elif mode == "s":
+                    robot.arm.go_to_sleep_pose()
+                elif mode == "r":
+                    robot.gripper.release()
+                elif mode == "g":
+                    robot.gripper.grasp()
 
 if  __name__ == "__main__":
     robot_startup()
     robot.arm.go_to_sleep_pose()
-    mode = 'h'
-    # # Let the user select the position
-    # while mode != 'q':
-    #     mode=input("[h]ome, [s]leep, [q]uit ")
-    #     if mode == "h":
-    #         robot.arm.go_to_home_pose()
-    #     elif mode == "s":
-    #         robot.arm.go_to_sleep_pose()
-    #     elif mode == "r":
-    #         robot.gripper.release()
-    #     elif mode == "g":
-    #         robot.gripper.grasp()
 
-    # move_robot()
     # robot.gripper.release()
-    # robot.gripper.grasp()
+    # robot.gripper.grasp(0.1)
+    # test_arm()
 
+    robot = Robot()
+
+    robot.test_calibration()
+
+    robot.arm.go_to_sleep_pose()
 
     robot_shutdown()
