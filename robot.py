@@ -14,7 +14,6 @@ robot = InterbotixManipulatorXS("px100", "arm", "gripper")
 class Robot:
     def __init__(self):
 
-
         def move_robot():
             #release the gripper
             robot.gripper.grasp(0.01)
@@ -34,6 +33,9 @@ class Robot:
                 robot.arm.set_ee_pose_components(x=x, y=y, z=z)
                 blocking = True #wait until its done
                 q = robot.arm.get_ee_pose() #get the robot position this is Qi position 3x3 matrix
+                print(q)
+                q = tuple(q[:3,3]) #take x,y,z
+                print(q)
                 q_array.append(q)
 
         def test_arm():
