@@ -144,13 +144,50 @@ class Image:
     def take_image():
         return None #maybe use the key press to take images? and read them from a file?
 
-    def render(self):
+    # def get_coords_once(self, align, clipping_distance):
+    #     result = self.get_Images(align, clipping_distance)
+
+    #     if result is False:
+    #         return None
+
+    #     depth_image, bg_removed, aligned_depth_frame = result
+
+    #     color_blurred = cv2.blur(bg_removed, (5, 5))
+    #     found, mask = self.find_Pen(color_blurred)
+
+    #     contours, ellipse_contour, approx, center = self.contour(mask)
+
+    #     return self.find_coords(center, aligned_depth_frame)
+
+    def get_coords_once(self, align, clipping_distance):
+        result = self.get_Images(align, clipping_distance)
+
+        if result is False:
+            return None
+
+        depth_image, bg_removed, depth_frame = result
+
+        blurred = cv2.blur(bg_removed, (5, 5))
+        found, mask = self.find_Pen(blurred)
+        contours, ellipse, approx, center = self.contour(mask)
+
+        coords = self.find_coords(center, depth_frame)
+
+        if center is not None:
+            cv2.circle(found, center, 40, (0, 255, 0), 3)
+
+        cv2.imshow("Pen detection", found)
+        cv2.waitKey(1)
+
+        return coords
+
+    def render(self, align, clipping_distance):
         try:
             while True:
-                if(image.get_Images(align, clipping_distance) is False):
+                if(self.get_Images(align, clipping_distance) is False):
                     continue
                 else:
-                    depth_image, bg_removed, aligned_depth_frame = image.get_Images(align, clipping_distance)
+                    depth_image, bg_removed, aligned_depth_frame = self.get_Images(align, clipping_distance)
 
                 depth_colormap = cv2.applyColorMap(cv2.convertScaleAbs(depth_image, alpha=0.03), cv2.COLORMAP_JET)
     
@@ -161,9 +198,9 @@ class Image:
                 if(center is not None):
                     cv2.circle(found, center, 40, (0,255,0), 40)
                     cv2.imshow("Ellipse", ellipse_contour)
-                    coords = self.find_coords(center, aligned_depth_frame)
-                    if coords is not None:
-                        x, y, z = coords
+                    self.coords = self.find_coords(center, aligned_depth_frame)
+                    if self.coords is not None:
+                        x, y, z = self.coords
                         print(x)
 
                 contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
@@ -196,5 +233,5 @@ if  __name__ == "__main__":
 
     image = Image(pipeline, config)
     align, clipping_distance = image.align_cams()
-    image.render()
+    image.render(align, clipping_distance)
      
