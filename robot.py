@@ -52,9 +52,9 @@ class Robot:
                     continue
                 blocking = True #wait until its done
                 q = robot.arm.get_ee_pose() #get the robot position this is Qi position 3x3 matrix
-                print("Robot Position:", q)
+                # print("Robot Position:", q)
                 q = tuple(q[:3,3]) #take x,y,z
-                print("Robot Position:", q)
+                # print("Robot Position:", q)
                 if(q is None):
                     continue
 

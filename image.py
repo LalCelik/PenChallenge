@@ -126,8 +126,7 @@ class Image:
             px, py = center
             width, height = depth_image.get_width(), depth_image.get_height()
 
-            #median of a small patch instead of one pixel, since depth
-            #sensor noise/holes on a single pixel can look like a valid reading
+            #median of a small 
             radius = 2
             samples = []
             for dx in range(-radius, radius + 1):
@@ -204,7 +203,7 @@ class Image:
                     self.coords = self.find_coords(center, aligned_depth_frame)
                     if self.coords is not None:
                         x, y, z = self.coords
-                        print(x)
+                        # print(x)
 
                 contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
