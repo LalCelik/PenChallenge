@@ -105,11 +105,8 @@ class Image:
         ellipse_contour = None
 
         if(contours):
-            #merge contour points
-            #so that parts of the pen aren't separated
-
-            all_points = np.concatenate(contours, axis=0) #put all the points in one list
-            contour = cv2.convexHull(all_points) #use convex hull to get the contour of the outer sides
+            contour = max(contours, key=cv2.contourArea)
+            contour = cv2.convexHull(contour)
 
             if(len(contour) >= 5):
                 ellipse = cv2.fitEllipse(contour)
@@ -123,17 +120,11 @@ class Image:
 
 #pixel to coords in meters
     def find_coords(self,center, depth_image):
-        # cfg = pipeline.start(self.config)
         profile = self.config.get_stream(rs.stream.color)
 
         if(profile is not None and center is not None):
             px, py = center
             width, height = depth_image.get_width(), depth_image.get_height()
-
-            #discard ellipse centers that fall outside the actual frame
-            #instead of feeding an invalid pixel to get_distance
-            if px < 0 or px >= width or py < 0 or py >= height:
-                return None
 
             #median of a small patch instead of one pixel, since depth
             #sensor noise/holes on a single pixel can look like a valid reading
@@ -150,32 +141,26 @@ class Image:
             if not samples:
                 return None
 
-            depth_in_meters = float(np.median(samples))
+            #delete outliers with median absolute deviation (MAD)
+            samples_arr = np.array(samples)
+            med = np.median(samples_arr)
+            mad = np.median(np.abs(samples_arr - med))
+
+            if mad > 0:
+                #0.6745 scales MAD to be comparable to a standard deviation
+                #under a normal distribution; 3.5 is a common outlier cutoff
+                modified_z = 0.6745 * (samples_arr - med) / mad
+                filtered = samples_arr[np.abs(modified_z) <= 3.5]
+                if filtered.size > 0:
+                    samples_arr = filtered
+
+            depth_in_meters = float(np.median(samples_arr))
 
             intr = profile.as_video_stream_profile().get_intrinsics()
             x,y,z = rs.rs2_deproject_pixel_to_point(intr, [px, py], depth_in_meters)
             return x,y,z
 
         return None
-
-
-    def take_image():
-        return None #maybe use the key press to take images? and read them from a file?
-
-    # def get_coords_once(self, align, clipping_distance):
-    #     result = self.get_Images(align, clipping_distance)
-
-    #     if result is False:
-    #         return None
-
-    #     depth_image, bg_removed, aligned_depth_frame = result
-
-    #     color_blurred = cv2.blur(bg_removed, (5, 5))
-    #     found, mask = self.find_Pen(color_blurred)
-
-    #     contours, ellipse_contour, approx, center = self.contour(mask)
-
-    #     return self.find_coords(center, aligned_depth_frame)
 
     def get_coords_once(self, align, clipping_distance):
         result = self.get_Images(align, clipping_distance)

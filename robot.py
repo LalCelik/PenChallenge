@@ -43,8 +43,11 @@ class Robot:
         try:
             q_array = []
             coord_array = []
-            coords = [(0.2, 0.1, 0.2),
+            coords = [(0.2,0.2,0.2),
+                      (0.2, 0.1, 0.2),
+                      (0.3, 0.1, 0.2),
                       (0.2,-0.1,0.2),
+                      (0.3, -0.1, 0.2),
                       (0.2,0.1,0.1),
                       (0.2,-0.1,0.1)] #[(x,y,z)]
 
@@ -79,11 +82,11 @@ class Robot:
 
             robot.arm.go_to_sleep_pose()
             robot.gripper.release()
-            time.sleep(5)
+            time.sleep(2)
 
             #going to the pen
             while True:
-                time.sleep(4)
+                time.sleep(2)
                 new_pen = camera.get_coords_once(align,clipping_distance)
                 print(new_pen)
                 if(new_pen is None):
@@ -92,15 +95,24 @@ class Robot:
                 q_new = r @ new_pen + t
 
                 x_n, y_n, z_n = q_new
-                y_n = y_n
 
                 robot.arm.set_ee_pose_components(x_n, y_n, z_n)
+
+                # new_pen = camera.get_coords_once(align,clipping_distance)
+                # print(new_pen)
+                # if(new_pen is None):
+                #     print("No pen detected")
+                #     continue
+                # q_new = r @ new_pen + t
+
+                # x_n, y_n, z_n = q_new
+
+                # robot.arm.set_ee_pose_components(x_n, y_n, z_n)
+
                 robot.gripper.grasp()
                 break
 
                 pipeline.stop()
-
-
         finally:
             pipeline.stop()
 
