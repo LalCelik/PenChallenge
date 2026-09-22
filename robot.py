@@ -26,13 +26,6 @@ class Robot:
     def __init__(self):
         pass
 
-    def move_robot(self):
-        # robot.arm.set_ee_pose_components(0.2, 0.1, 0.2)
-        # robot.arm.set_ee_pose_components(0.2, -0.1, 0.2)
-        # robot.arm.set_ee_pose_components(0.2, 0.1, 0.1)
-        robot.arm.set_ee_pose_components(0.2, -0.1, 0.1)
-
-
     def test_calibration(self):
         pipeline = rs.pipeline()
         config = rs.config()
@@ -43,11 +36,10 @@ class Robot:
         try:
             q_array = []
             coord_array = []
-            coords = [(0.2,0.2,0.2),
-                      (0.2, 0.1, 0.2),
-                      (0.3, 0.1, 0.2),
+            coords = [(0.2, 0.1, 0.2),
+                      (0.2, 0.2, 0.1),
+                      (0.2, 0.2, 0.2),
                       (0.2,-0.1,0.2),
-                      (0.3, -0.1, 0.2),
                       (0.2,0.1,0.1),
                       (0.2,-0.1,0.1)] #[(x,y,z)]
 
@@ -65,7 +57,6 @@ class Robot:
                 print("Robot Position:", q)
                 if(q is None):
                     continue
-
 
                 q_array.append(q)
                 pen_coord = camera.get_coords_once(align,clipping_distance) #Pi
@@ -98,16 +89,16 @@ class Robot:
 
                 robot.arm.set_ee_pose_components(x_n, y_n, z_n)
 
-                # new_pen = camera.get_coords_once(align,clipping_distance)
-                # print(new_pen)
-                # if(new_pen is None):
-                #     print("No pen detected")
-                #     continue
-                # q_new = r @ new_pen + t
+                new_pen = camera.get_coords_once(align,clipping_distance)
+                print(new_pen)
+                if(new_pen is None):
+                    print("No pen detected")
+                    continue
+                q_new = r @ new_pen + t
 
-                # x_n, y_n, z_n = q_new
+                x_n, y_n, z_n = q_new
 
-                # robot.arm.set_ee_pose_components(x_n, y_n, z_n)
+                robot.arm.set_ee_pose_components(x_n, y_n, z_n)
 
                 robot.gripper.grasp()
                 break
