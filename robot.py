@@ -71,41 +71,73 @@ class Robot:
             print("Rotation Matrix:", r)
             t = self.find_t(coord_array, q_array, r)
 
-            robot.arm.go_to_sleep_pose()
-            robot.gripper.release()
-            time.sleep(2)
+            self.grab_pen(camera, align, clipping_distance, r, t)
 
-            #going to the pen
-            while True:
-                time.sleep(2)
-                new_pen = camera.get_coords_once(align,clipping_distance)
-                print(new_pen)
-                if(new_pen is None):
-                    print("No pen detected")
-                    continue
-                q_new = r @ new_pen + t
-
-                x_n, y_n, z_n = q_new
-
-                robot.arm.set_ee_pose_components(x_n, y_n, z_n)
-
-                new_pen = camera.get_coords_once(align,clipping_distance)
-                print(new_pen)
-                if(new_pen is None):
-                    print("No pen detected")
-                    continue
-                q_new = r @ new_pen + t
-
-                x_n, y_n, z_n = q_new
-
-                robot.arm.set_ee_pose_components(x_n, y_n, z_n)
-
-                robot.gripper.grasp()
-                break
-
-                pipeline.stop()
+            pipeline.stop()
         finally:
             pipeline.stop()
+
+    def calibration(self, camera, align, clipping_distance):
+        q_array = []
+        coord_array = []
+        coords = [(0.2, 0.1, 0.2),
+                    (0.2, 0.2, 0.1),
+                    (0.2, 0.2, 0.2),
+                    (0.2,-0.1,0.2),
+                    (0.2,0.1,0.1),
+                    (0.2,-0.1,0.1)] #[(x,y,z)]
+
+        for coord in coords:
+            #move robot to very left
+            x,y,z = coord
+            i, success = robot.arm.set_ee_pose_components(x=x, y=y, z=z)
+            if not success:
+                print("Pen is in invalid position")
+                continue
+            blocking = True #wait until its done
+            q = robot.arm.get_ee_pose() #get the robot position this is Qi position 3x3 matrix
+            # print("Robot Position:", q)
+            q = tuple(q[:3,3]) #take x,y,z
+            # print("Robot Position:", q)
+            if(q is None):
+                continue
+
+            q_array.append(q)
+            pen_coord = camera.get_coords_once(align,clipping_distance) #Pi
+            if pen_coord is None:
+                print("Pen not detected, skipping this sample")
+                continue 
+            coord_array.append(pen_coord)
+
+        print(coord_array)
+
+        r = self.find_r(coord_array, q_array)
+        print("Rotation Matrix:", r)
+        t = self.find_t(coord_array, q_array, r)
+        return r,t
+
+
+    def grab_pen(self, camera, align, clipping_distance, r, t):
+
+        robot.arm.go_to_sleep_pose()
+        robot.gripper.release()
+
+        #going to the pen
+        while True:
+            time.sleep(2)
+            new_pen = camera.get_coords_once(align,clipping_distance)
+            print(new_pen)
+            if(new_pen is None):
+                print("No pen detected")
+                continue
+            q_new = r @ new_pen + t
+
+            x_n, y_n, z_n = q_new
+
+            robot.arm.set_ee_pose_components(x_n, y_n, z_n)
+            robot.gripper.grasp()
+            break
+
 
 
     def find_r(self, p_list, q_list):
@@ -134,16 +166,29 @@ class Robot:
     def test_arm(self):
         mode = 'h'
         # Let the user select the position
+        calibrated = False
         while mode != 'q':
-            mode=input("[h]ome, [s]leep, [q]uit ")
-            if mode == "h":
-                robot.arm.go_to_home_pose()
-            elif mode == "s":
-                robot.arm.go_to_sleep_pose()
-            elif mode == "r":
-                robot.gripper.release()
-            elif mode == "g":
-                robot.gripper.grasp()
+            robot_class = Robot()
+            pipeline = rs.pipeline()
+            config = rs.config()
+
+            camera = Image(pipeline, config)
+            align, clipping_distance = camera.align_cams()
+            try:
+
+                mode=input("[c]alibrate, [g]rab pen, [q]uit ")
+                if mode == "c":
+                    calibrated = True
+                    r, t = robot_class.calibration( camera, align, clipping_distance)
+                elif mode == "g":
+                    if(calibrated):
+                        robot_class.grab_pen( camera, align, clipping_distance, r, t)
+                    else:
+                        print("Robot is not calibrated")
+                    
+            finally:
+                pipeline.stop()
+                
 
 if  __name__ == "__main__":
     robot_startup()
@@ -155,8 +200,10 @@ if  __name__ == "__main__":
 
     robot_class = Robot()
     # robot_class.move_robot()
-    robot_class.test_calibration()
+    # robot_class.test_calibration()
 
-    # robot.arm.go_to_sleep_pose()
+    robot_class.test_arm()
+
+    robot.arm.go_to_sleep_pose()
 
     robot_shutdown()
